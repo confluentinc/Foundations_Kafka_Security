@@ -1,0 +1,29 @@
+github:
+  prebuilds:
+    # enable for the default branch (defaults to true)
+    master: true
+    # enable for all branches in this repo (defaults to false)
+    branches: true
+    # enable for pull requests coming from this repo (defaults to true)
+    pullRequests: true
+    # add a "Review in Gitpod" button as a comment to pull requests (defaults to false)
+    addComment: true
+    # configure whether Gitpod registers itself as a status check to pull requests
+    addCheck: false
+
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - name: Pre-load docker cp-serverimage to workspace 
+    command: docker pull confluentinc/cp-server:7.1.1-1-ubi8
+    
+  - name: Pre-load docker zookeeper image to workspace     
+    command: docker pull confluentinc/cp-zookeeper:7.1.1-1-ubi8
+
+# ports:
+    
+  # Confluent Server (broker)
+  # - port: 9092
+  #   onOpen: ignore
+

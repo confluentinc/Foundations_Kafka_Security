@@ -1,0 +1,112 @@
+
+
+
+
+
+openssl req -new -nodes \
+   -x509 \
+   -days 365 \
+   -newkey rsa:2048 \
+   -keyout /workspace/Fund_Kafka_Security/tls/ca.key \
+   -out /workspace/Fund_Kafka_Security/tls/ca.crt \
+   -config /workspace/Fund_Kafka_Security/tls/ca.cnf
+
+cat /workspace/Fund_Kafka_Security/tls/ca.crt /workspace/Fund_Kafka_Security/tls/ca.key > /workspace/Fund_Kafka_Security/tls/ca.pem
+
+openssl req -new \
+    -newkey rsa:2048 \
+    -keyout /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.key \
+    -out /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.csr \
+    -config /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.cnf \
+    -nodes
+
+openssl x509 -req \
+    -days 3650 \
+    -in /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.csr \
+    -CA /workspace/Fund_Kafka_Security/tls/ca.crt \
+    -CAkey /workspace/Fund_Kafka_Security/tls/ca.key \
+    -CAcreateserial \
+    -out /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.crt \
+    -extfile /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.cnf \
+    -extensions v3_req
+
+openssl pkcs12 -export \
+    -in /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.crt \
+    -inkey /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.key \
+    -chain \
+    -CAfile /workspace/Fund_Kafka_Security/tls/ca.pem \
+    -name kafka-1 \
+    -out /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.p12 \
+    -password pass:confluent
+
+keytool -importkeystore \
+    -deststorepass confluent \
+    -destkeystore /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka.kafka-1.keystore.pkcs12 \
+    -srckeystore /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1.p12 \
+    -deststoretype PKCS12  \
+    -srcstoretype PKCS12 \
+    -noprompt \
+    -srcstorepass confluent
+
+keytool -list -v \
+    -keystore /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka.kafka-1.keystore.pkcs12 \
+    -storepass confluent
+
+sudo tee /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1_sslkey_creds << EOF >/dev/null
+confluent
+EOF
+
+sudo tee /workspace/Fund_Kafka_Security/tls/kafka-1-creds/kafka-1_keystore_creds << EOF >/dev/null
+confluent
+EOF
+
+sudo /workspace/Fund_Kafka_Security/tls/scripts/keystore-create-kafka-2-3.sh
+
+Open SSL connection with the kafka-1 broker:
+
+openssl s_client -connect localhost:19093 -tls1_3 -showcerts
+
+Ctrl+C or Command+C to close the connection
+
+kafka-topics \
+    --bootstrap-server localhost:19092 \
+    --create \
+    --topic test-topic \
+    --replica-assignment 101:102:103
+
+    docker run --rm -it --net container:kafka-1  \
+    nicolaka/netshoot  \
+        tcpdump -c 40 -X port 19092 or port 19093
+
+kafka-console-producer \
+    --bootstrap-server localhost:19092 \
+    --topic test-topic
+
+At the > prompt type:
+
+PLAINTEXT_record
+
+Press Ctrl+D to exit kafka-console-producer.
+
+keytool -keystore /workspace/Fund_Kafka_Security/tls/client-creds/kafka.client.truststore.pkcs12 \
+    -alias CARoot \
+    -import \
+    -file /workspace/Fund_Kafka_Security/tls/ca.crt \
+    -storepass confluent  \
+    -noprompt \
+    -storetype PKCS12
+
+    kafka-console-producer \
+    --bootstrap-server localhost:19093 \
+    --topic test-topic
+
+    cat /workspace/Fund_Kafka_Security/tls/client-creds/client-ssl.properties
+
+docker run --rm -it --net container:kafka-1  \
+    nicolaka/netshoot  \
+        tcpdump -c 30 -X port 19092 or port 19093
+
+kafka-console-producer \
+    --bootstrap-server localhost:19093 \
+    --topic test-topic \
+    --producer.config /workspace/Fund_Kafka_Security/tls/client-creds/client-ssl.properties
