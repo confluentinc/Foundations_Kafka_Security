@@ -1,7 +1,7 @@
 # template-confluent-cli
 Template repo for a lab environment with confluent and ccloud CLIs installed. This is meant to provide a minimal, 0-setup, 1-click experience with Confluent.
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/daweston/Foundations_Kafka_Security-1)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://github.com/confluentinc/Foundations_Kafka_Security)
 
 ## Create a New Repo from Template
 
